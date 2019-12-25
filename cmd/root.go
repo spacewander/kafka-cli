@@ -31,7 +31,7 @@ var cfgFile string
 var cfg *sarama.Config = sarama.NewConfig()
 var brokers string
 var zookeepers string
-var c sarama.Client
+var kafkaClient sarama.Client
 
 var verbose bool
 
@@ -51,7 +51,7 @@ var RootCmd = &cobra.Command{
 			sarama.Logger = log.New(os.Stderr, "[kafka-cli] ", log.LstdFlags)
 		}
 
-		c, err = sarama.NewClient(strings.Split(brokers, ","), cfg)
+		kafkaClient, err = sarama.NewClient(strings.Split(brokers, ","), cfg)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(-1)
@@ -65,8 +65,8 @@ func Execute() {
 	if err := RootCmd.Execute(); err != nil {
 		os.Exit(-1)
 	}
-	if c != nil {
-		c.Close()
+	if kafkaClient != nil {
+		kafkaClient.Close()
 	}
 }
 

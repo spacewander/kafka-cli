@@ -38,7 +38,7 @@ func (t Topic) String() string {
 }
 
 func displayTopics() {
-	names, err := c.Topics()
+	names, err := kafkaClient.Topics()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -48,7 +48,7 @@ func displayTopics() {
 	fmt.Printf("--------------------------------------------------\n")
 	for i := range names {
 		t := Topic{Name: names[i]}
-		ps, err := c.Partitions(names[i])
+		ps, err := kafkaClient.Partitions(names[i])
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(-1)
@@ -61,14 +61,14 @@ func displayTopics() {
 		offsets := make([]int64, ps[len(ps)-1]+1)
 
 		for _, p := range ps {
-			rs, err := c.Replicas(names[i], p)
+			rs, err := kafkaClient.Replicas(names[i], p)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(-1)
 			}
 			replicas[p] = rs
 
-			ofs, err := c.GetOffset(names[i], p, sarama.OffsetNewest)
+			ofs, err := kafkaClient.GetOffset(names[i], p, sarama.OffsetNewest)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(-1)

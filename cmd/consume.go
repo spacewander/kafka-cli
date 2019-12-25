@@ -51,7 +51,7 @@ var consumeCmd = &cobra.Command{
 			}
 		}
 
-		consumer, err := sarama.NewConsumerFromClient(c)
+		consumer, err := sarama.NewConsumerFromClient(kafkaClient)
 		exitOnError(err)
 		defer consumer.Close()
 

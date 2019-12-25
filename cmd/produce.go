@@ -41,7 +41,7 @@ var produceCmd = &cobra.Command{
 				os.Exit(-1)
 			}
 		}
-		producer, err := sarama.NewAsyncProducerFromClient(c)
+		producer, err := sarama.NewAsyncProducerFromClient(kafkaClient)
 		exitOnError(err)
 
 		ch := make(chan []byte)
