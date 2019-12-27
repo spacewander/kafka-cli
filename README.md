@@ -39,6 +39,13 @@ Flags:
 Use "kafka-cli [command] --help" for more information about a command.
 ```
 
+## Authentication
+
+Several environment variables can be used to authentica the client.
+* `KAFKA_CLI_USER`: username for SASL/PLAIN  or SASL/SCRAM authentication
+* `KAFKA_CLI_PASSWORD`: password  for SASL/PLAIN  or SASL/SCRAM authentication
+* `KAFKA_CLI_CLIENT_ID`: the client ID, default to `kafka-cli`, this variable can be overwrited by --connectid option
+
 ## List all topics
 
 ```

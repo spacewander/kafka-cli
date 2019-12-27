@@ -51,7 +51,8 @@ var RootCmd = &cobra.Command{
 			sarama.Logger = log.New(os.Stderr, "[kafka-cli] ", log.LstdFlags)
 		}
 
-		kafkaClient, err = sarama.NewClient(strings.Split(brokers, ","), cfg)
+		addrs := strings.Split(brokers, ",")
+		kafkaClient, err = sarama.NewClient(addrs, cfg)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(-1)
@@ -71,8 +72,6 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	// Here you will define your flags and configuration settings.
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
@@ -94,6 +93,21 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&brokers, "brokers", "127.0.0.1:9092", "broker list, delimited by comma")
 	RootCmd.PersistentFlags().StringVar(&zookeepers, "zookeepers", "127.0.0.1:9093", "zookeeper server list, delimited by comma, only use when operate topic")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "print log messages")
+
+	initConfig()
+
+	user := viper.GetString("USER")
+	if user != "" {
+		password := viper.GetString("PASSWORD")
+		cfg.Net.SASL.Enable = true
+		cfg.Net.SASL.User = user
+		cfg.Net.SASL.Password = password
+	}
+	clientID := viper.GetString("CLIENT_ID")
+	// if --clientid option is specifc, overwrite the environment variable
+	if clientID != "" && cfg.ClientID == "kafka-cli" {
+		cfg.ClientID = clientID
+	}
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -104,7 +118,9 @@ func initConfig() {
 
 	viper.SetConfigName(".kafka-cli") // name of config file (without extension)
 	viper.AddConfigPath("$HOME")      // adding home directory as first search path
-	viper.AutomaticEnv()              // read in environment variables that match
+
+	viper.SetEnvPrefix("kafka_cli")
+	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
