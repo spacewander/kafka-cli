@@ -3,7 +3,7 @@
 ## Install
 
 ```
-go get github.com/shafreeck/kafka-cli
+go get github.com/spacewander/kafka-cli
 ```
 
 ## Usage

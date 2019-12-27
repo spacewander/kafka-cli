@@ -1,4 +1,4 @@
-module github.com/shafreeck/kafka-cli
+module github.com/spacewander/kafka-cli
 
 go 1.12
 

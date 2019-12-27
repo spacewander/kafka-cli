@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/shafreeck/kafka-cli/cmd"
+	"github.com/spacewander/kafka-cli/cmd"
 )
 
 func main() {
