@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"text/template"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -28,7 +29,12 @@ import (
 type consumerOptions struct {
 	Partition int32
 	Offset    int64
+	Format    string
 }
+
+const (
+	defaultOutputFmt = "{{.Timestamp}} {{.Topic}}({{.Partition}}:{{.Offset}}) {{.Value}}"
+)
 
 var consumerOpt consumerOptions
 
@@ -50,6 +56,9 @@ var consumeCmd = &cobra.Command{
 				os.Exit(-1)
 			}
 		}
+
+		outputTemplate := template.Must(
+			template.New("output").Parse(consumerOpt.Format + "\n"))
 
 		consumer, err := sarama.NewConsumerFromClient(kafkaClient)
 		exitOnError(err)
@@ -97,7 +106,19 @@ var consumeCmd = &cobra.Command{
 		for {
 			select {
 			case msg := <-messages:
-				fmt.Printf("%v(%v:%v) %s\n", msg.Topic, msg.Partition, msg.Offset, msg.Value)
+				ts := time.Now().Format(time.RFC3339)
+				_ = outputTemplate.Execute(os.Stdout, struct {
+					Timestamp, Topic, Value string
+					Partition               int32
+					Offset                  int64
+				}{
+					Timestamp: ts,
+					Topic:     msg.Topic,
+					Partition: msg.Partition,
+					Offset:    msg.Offset,
+					Value:     string(msg.Value),
+				})
+				// TODO log the error
 			case <-signals:
 				cancel()
 				return
@@ -128,4 +149,7 @@ func init() {
 	consumeCmd.Flags().BoolVar(&cfg.Consumer.Return.Errors, "return.errors", true, "any errors that occurred while consuming are returned")
 	consumeCmd.Flags().Int64Var(&consumerOpt.Offset, "offset", sarama.OffsetNewest, "offset to consume(OffsetNewest=-1, OffsetOldest=-2)")
 	consumeCmd.Flags().Int32Var(&consumerOpt.Partition, "partition", -1, "partition to consume")
+	consumeCmd.Flags().StringVar(&consumerOpt.Format, "format", defaultOutputFmt, `the format of output, supported variables:
+	Timestamp, Topic, Partition, Offset, Value
+`)
 }
