@@ -16,12 +16,12 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/Shopify/sarama"
 	"github.com/spf13/cobra"
 )
 
+// Topic represents a kafka topic
 type Topic struct {
 	Name         string
 	Partitions   []int32   //partition ids
@@ -39,20 +39,14 @@ func (t Topic) String() string {
 
 func displayTopics() {
 	names, err := kafkaClient.Topics()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
-	}
+	exitOnError(err)
 
 	fmt.Printf("%-15s\tpartition[replicaid...]:offset ...\n", "topic")
 	fmt.Printf("--------------------------------------------------\n")
 	for i := range names {
 		t := Topic{Name: names[i]}
 		ps, err := kafkaClient.Partitions(names[i])
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
-		}
+		exitOnError(err)
 		if len(ps) < 1 {
 			continue
 		}
@@ -62,17 +56,11 @@ func displayTopics() {
 
 		for _, p := range ps {
 			rs, err := kafkaClient.Replicas(names[i], p)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(-1)
-			}
+			exitOnError(err)
 			replicas[p] = rs
 
 			ofs, err := kafkaClient.GetOffset(names[i], p, sarama.OffsetNewest)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(-1)
-			}
+			exitOnError(err)
 			offsets[p] = ofs
 		}
 		t.Partitions = ps

@@ -45,16 +45,9 @@ var consumeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		topics := args
 		if len(topics) == 0 {
-			fmt.Println("topic is required\n")
+			fmt.Println("topic is required")
 			displayTopics()
 			os.Exit(-1)
-		}
-
-		exitOnError := func(err error) {
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(-1)
-			}
 		}
 
 		outputTemplate := template.Must(
@@ -107,7 +100,7 @@ var consumeCmd = &cobra.Command{
 			select {
 			case msg := <-messages:
 				ts := time.Now().Format(time.RFC3339)
-				_ = outputTemplate.Execute(os.Stdout, struct {
+				err = outputTemplate.Execute(os.Stdout, struct {
 					Timestamp, Topic, Value string
 					Partition               int32
 					Offset                  int64
@@ -118,7 +111,7 @@ var consumeCmd = &cobra.Command{
 					Offset:    msg.Offset,
 					Value:     string(msg.Value),
 				})
-				// TODO log the error
+				warnOnError(err)
 			case <-signals:
 				cancel()
 				return

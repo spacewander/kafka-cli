@@ -53,19 +53,15 @@ var RootCmd = &cobra.Command{
 
 		addrs := strings.Split(brokers, ",")
 		kafkaClient, err = sarama.NewClient(addrs, cfg)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
-		}
+		exitOnError(err)
 	},
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if err := RootCmd.Execute(); err != nil {
-		os.Exit(-1)
-	}
+	err := RootCmd.Execute()
+	exitOnError(err)
 	if kafkaClient != nil {
 		kafkaClient.Close()
 	}

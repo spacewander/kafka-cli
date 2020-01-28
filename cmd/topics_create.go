@@ -67,18 +67,12 @@ func createTopics(topics []string) {
 	}
 	servers := strings.Split(zookeepers, ",")
 	kz, err := kazoo.NewKazoo(servers, cfg)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
-	}
+	exitOnError(err)
 	defer kz.Close()
 
 	for _, topic := range topics {
 		err = kz.CreateTopic(topic, createCmdOpts.Partitions, createCmdOpts.Replicas, parseTopicConfig(createCmdOpts.Config))
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
-		}
+		exitOnError(err)
 	}
 }
 
