@@ -33,7 +33,7 @@ type consumerOptions struct {
 }
 
 const (
-	defaultOutputFmt = "{{.Timestamp}} {{.Topic}}({{.Partition}}:{{.Offset}}) {{.Value}}"
+	defaultOutputFmt = "{{.ConsumeTime}} {{.Topic}}({{.Partition}}:{{.Offset}}) {{.Value}}"
 )
 
 var consumerOpt consumerOptions
@@ -100,16 +100,23 @@ var consumeCmd = &cobra.Command{
 			select {
 			case msg := <-messages:
 				ts := time.Now().Format(time.RFC3339)
+				cts := msg.Timestamp.Format(time.RFC3339)
+				lats := msg.BlockTimestamp.Format(time.RFC3339)
 				err = outputTemplate.Execute(os.Stdout, struct {
-					Timestamp, Topic, Value string
-					Partition               int32
-					Offset                  int64
+					Time, Topic, Value string
+					CreateTime         string
+					ConsumeTime        string
+					LogAppendTime      string
+					Partition          int32
+					Offset             int64
 				}{
-					Timestamp: ts,
-					Topic:     msg.Topic,
-					Partition: msg.Partition,
-					Offset:    msg.Offset,
-					Value:     string(msg.Value),
+					CreateTime:    cts,
+					ConsumeTime:   ts,
+					LogAppendTime: lats,
+					Topic:         msg.Topic,
+					Partition:     msg.Partition,
+					Offset:        msg.Offset,
+					Value:         string(msg.Value),
 				})
 				warnOnError(err)
 			case <-signals:
@@ -143,6 +150,9 @@ func init() {
 	consumeCmd.Flags().Int64Var(&consumerOpt.Offset, "offset", sarama.OffsetNewest, "offset to consume(OffsetNewest=-1, OffsetOldest=-2)")
 	consumeCmd.Flags().Int32Var(&consumerOpt.Partition, "partition", -1, "partition to consume")
 	consumeCmd.Flags().StringVar(&consumerOpt.Format, "format", defaultOutputFmt, `the format of output, supported variables:
-	Timestamp, Topic, Partition, Offset, Value
+	CreateTime, LogAppendTime, ConsumeTime, Topic, Partition, Offset, Value
+* CreateTime: the time when producer created the message, in 2006-01-02T15:04:05Z07:00 (RFC3339) format.
+* LogAppendTime: the time when broker handled the message.
+* ConsumeTime: the time when consumer received the message.
 `)
 }
