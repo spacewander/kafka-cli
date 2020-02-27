@@ -34,6 +34,7 @@ var zookeepers string
 var kafkaClient sarama.Client
 
 var verbose bool
+var logAuthMsg bool
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -49,6 +50,11 @@ var RootCmd = &cobra.Command{
 
 		if verbose {
 			sarama.Logger = log.New(os.Stderr, "[kafka-cli] ", log.LstdFlags)
+		}
+
+		if logAuthMsg {
+			fmt.Printf("AuthLog: User: %s, Password: %s, ClientID: %s\n",
+				cfg.Net.SASL.User, cfg.Net.SASL.Password, cfg.ClientID)
 		}
 
 		addrs := strings.Split(brokers, ",")
@@ -89,6 +95,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&brokers, "brokers", "127.0.0.1:9092", "broker list, delimited by comma")
 	RootCmd.PersistentFlags().StringVar(&zookeepers, "zookeepers", "127.0.0.1:9093", "zookeeper server list, delimited by comma, only use when operate topic")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "print log messages")
+	RootCmd.PersistentFlags().BoolVar(&logAuthMsg, "log-auth-msg", false, "log authentication messages")
 
 	initConfig()
 
