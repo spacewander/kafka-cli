@@ -17,7 +17,7 @@ Usage:
 Available Commands:
   consume     consume topic from kafka
   monitor     display kafka cluster metrics, TODO
-  produce     TODO
+  produce     produce message
   topics      list all topics
 
 Flags:
@@ -79,4 +79,9 @@ filebeats       0[0]:12488893   1[0]:11301355   2[0]:11301353   3[0]:11301197   
 
 ## Produce messages
 
-TODO
+```
+./kafka-cli --brokers=127.0.0.1:9092 produce test /tmp/x.txt [key]
+```
+
+Read bytes from the given file (/tmp/x.txt) and send them to topic (test).
+The optional key argument can be specified after the filename.

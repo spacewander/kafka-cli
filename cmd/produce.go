@@ -15,12 +15,16 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/Shopify/sarama"
 	"github.com/spf13/cobra"
+)
+
+var (
+	requiredAcks int16
 )
 
 // produceCmd represents the produce command
@@ -28,52 +32,45 @@ var produceCmd = &cobra.Command{
 	Use:   "produce",
 	Short: "produce message",
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("topic is required")
+		if len(args) <= 1 {
+			fmt.Println("topic and value are required")
 			os.Exit(-1)
 		}
 
 		topic := args[0]
+		filename := args[1]
 
-		exitOnError := func(err error) {
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(-1)
-			}
+		var key string
+		if len(args) > 2 {
+			key = args[2]
 		}
-		producer, err := sarama.NewAsyncProducerFromClient(kafkaClient)
+
+		kafkaClient.Config().Producer.RequiredAcks =
+			sarama.RequiredAcks(requiredAcks)
+		kafkaClient.Config().Producer.Return.Successes = true
+		kafkaClient.Config().Producer.Return.Errors = true
+		producer, err := sarama.NewSyncProducerFromClient(kafkaClient)
+		exitOnError(err)
+		defer producer.Close()
+
+		f, err := os.Open(filename)
+		exitOnError(err)
+		defer f.Close()
+		value, err := ioutil.ReadAll(f)
 		exitOnError(err)
 
-		ch := make(chan []byte)
-		defer producer.Close()
-		go func() {
-			if err := readMessages(os.Stdin, ch); err != nil {
-				exitOnError(err)
-			}
-		}()
-		for msg := range ch {
-			select {
-			case producer.Input() <- &sarama.ProducerMessage{Topic: topic, Value: sarama.ByteEncoder(msg)}:
-			case ack := <-producer.Successes():
-				fmt.Println(ack)
-			case err := <-producer.Errors():
-				exitOnError(err)
-			}
+		msg := sarama.ProducerMessage{
+			Topic: topic,
+			Value: sarama.ByteEncoder(value),
 		}
-
+		if key != "" {
+			msg.Key = sarama.StringEncoder(key)
+		}
+		partition, offset, err := producer.SendMessage(&msg)
+		exitOnError(err)
+		fmt.Printf("Sent to %s, partition: %d, offset: %d\n",
+			topic, partition, offset)
 	},
-}
-
-func readMessages(f *os.File, ch chan []byte) error {
-	reader := bufio.NewReader(f)
-	for {
-		line, err := reader.ReadBytes('\n')
-		if err != nil {
-			return err
-		}
-		ch <- line[0 : len(line)-1]
-	}
-	return nil
 }
 
 func init() {
@@ -88,5 +85,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// produceCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
+	produceCmd.Flags().Int16Var(&requiredAcks, "request.required.acks", 1,
+		"The level of acknowledgement reliability needed from the broker")
 }
